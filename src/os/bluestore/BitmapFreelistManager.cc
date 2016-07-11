@@ -63,13 +63,14 @@ int BitmapFreelistManager::create(uint64_t new_size, KeyValueDB::Transaction txn
   _init_misc();
 
   blocks = size / bytes_per_block;
-  if (blocks / blocks_per_key * blocks_per_key != blocks) {
+  if (size / (blocks * blocks_per_key) * (blocks * blocks_per_key) != size) {
     blocks = (blocks / blocks_per_key + 1) * blocks_per_key;
     dout(10) << __func__ << " rounding blocks up from 0x" << std::hex << size
 	     << " to 0x" << (blocks * bytes_per_block)
 	     << " (0x" << blocks << " blocks)" << std::dec << dendl;
     // set past-eof blocks as allocated
-    _xor(size, blocks * bytes_per_block - size, txn);
+    uint64_t min_sz = size / bytes_per_block * bytes_per_block;
+    _xor(min_sz, blocks * bytes_per_block - min_sz, txn);
   }
   dout(10) << __func__
 	   << " size 0x" << std::hex << size
